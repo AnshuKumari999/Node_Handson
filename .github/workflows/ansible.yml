@@ -1,0 +1,65 @@
+- name: Create Azure VM with NSG and open ports
+  hosts: localhost
+  vars:
+    resource_group_name: "my-resource-group"
+    location: "westus"
+    network_security_group_name: "my-nsg"
+    vm_name: "my-vm"
+    admin_username: "my-admin-username"
+    admin_password: "my-admin-password"
+    vm_size: "Standard_B1s"
+    vnet_name: "my-vnet"
+    subnet_name: "my-subnet"
+    port: "80"
+  tasks:
+    - name: Create resource group
+      azure_rm_resourcegroup:
+        name: "{{ resource_group_name }}"
+        location: "{{ location }}"
+      register: rg
+
+    - name: Create virtual network
+      azure_rm_virtualnetwork:
+        name: "{{ vnet_name }}"
+        resource_group: "{{ resource_group_name }}"
+        address_prefixes: "10.0.0.0/16"
+      register: vnet
+
+    - name: Create subnet
+      azure_rm_subnet:
+        name: "{{ subnet_name }}"
+        resource_group: "{{ resource_group_name }}"
+        virtual_network_name: "{{ vnet_name }}"
+        address_prefix: "10.0.0.0/24"
+      register: subnet
+
+    - name: Create network security group
+      azure_rm_securitygroup:
+        name: "{{ network_security_group_name }}"
+        resource_group: "{{ resource_group_name }}"
+      register: nsg
+
+    - name: Create network security rule
+      azure_rm_securitygrouprule:
+        name: "allow-http"
+        resource_group: "{{ resource_group_name }}"
+        security_group_name: "{{ network_security_group_name }}"
+        priority: 1001
+        protocol: Tcp
+        destination_port_range: "{{ port }}"
+        access: Allow
+        direction: Inbound
+      register: nsg_rule
+
+    - name: Create virtual machine
+      azure_rm_virtualmachine:
+        resource_group: "{{ resource_group_name }}"
+        name: "{{ vm_name }}"
+        vm_size: "{{ vm_size }}"
+        location: "{{ location }}"
+        network_interface_names: "myNIC"
+        os_type: "Linux"
+        image:
+          offer: "UbuntuServer"
+          publisher: "Canonical"
+          sku: "16.04
