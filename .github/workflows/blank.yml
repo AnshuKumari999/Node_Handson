@@ -1,9 +1,10 @@
-- hosts: localhost
+- name: Ansible remote shell
+  hosts: server
   connection: local
   tasks:
     - name: Create resource group
       azure_rm_resourcegroup: 
-        name: ansible_rg
+        name: ansible_rg1
         location: eastus
       register: rg
     - debug:
